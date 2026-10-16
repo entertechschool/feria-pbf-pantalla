@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI Coach · Enter Tech School</title>
+<style>
+  @font-face{font-family:"Work Sans";src:url(assets/fonts/WorkSans-latin-var.woff2) format("woff2");font-weight:100 900;font-display:block}
+  :root{
+    --black:#0d0d12; --white:#ffffff; --accent:#05d3aa;
+    --gray:#5c5966;      /* negro rebajado para textos secundarios */
+    --line:#e4e2ea;      /* negro al 10 % sobre blanco */
+    --out:cubic-bezier(.16,1,.3,1);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%;background:var(--white);overflow:hidden;cursor:none}
+  ::selection{background:var(--accent);color:var(--white)}
+
+  /* Escenario fijo 1920×1080, escalado para llenar cualquier pantalla 16:9 */
+  .stage{position:absolute;left:50%;top:50%;width:1920px;height:1080px;transform-origin:center;
+    font-family:"Work Sans",sans-serif;color:var(--black);background:var(--white)}
+
+  .brands{position:absolute;left:96px;top:84px;font-size:30px;font-weight:400;letter-spacing:-.01em}
+  .brands b{font-weight:900}
+  .finale .brands{left:140px}
+  .live{position:absolute;right:96px;top:84px;display:flex;align-items:center;gap:14px;font-weight:700;font-size:26px}
+  .live i{width:16px;height:16px;border-radius:50%;background:var(--accent)}
+
+  h1{position:absolute;left:96px;top:160px;font-weight:900;font-size:116px;line-height:.95;letter-spacing:-.04em;text-wrap:balance}
+  h1 span{display:inline-block;background:var(--accent);padding:0 .12em;margin:.04em 0 0 -.12em}
+
+  /* Banda del mecanismo */
+  .band{position:absolute;left:96px;right:96px;top:490px;height:400px;display:grid;grid-template-columns:1fr 380px 1fr;gap:72px;align-items:center}
+  .rail{position:absolute;left:0;right:0;top:50%;height:4px;margin-top:-2px;border-radius:2px;background:var(--black);z-index:0}
+  .spark{position:absolute;top:50%;width:28px;height:28px;margin:-14px 0 0 -14px;border-radius:50%;background:var(--accent);
+    box-shadow:0 0 0 6px var(--white),0 0 0 9px var(--accent);opacity:0;z-index:1}
+  .col{position:relative;z-index:2}
+  .col::after{content:"";position:absolute;inset:-180px -12px -12px;background:var(--white);opacity:0;pointer-events:none;transition:opacity .6s var(--out)}
+  .col.plan::after{top:-80px}
+  .stage:not([data-phase="listen"]) .col.listen::after,
+  .stage:not([data-phase="plan"]) .col.plan::after{opacity:.72}
+  .head{position:absolute;left:0;right:0;bottom:100%;padding-bottom:16px}
+
+  .step{font-weight:700;font-size:30px;color:var(--gray);display:flex;align-items:baseline;gap:12px}
+  .step .ex{margin-left:auto;font-weight:600;font-size:20px}
+  .step b{font-weight:900;color:var(--black)}
+
+  .who{font-weight:600;font-size:22px;color:var(--gray);margin-top:14px}
+  .bubble{background:var(--white);border:4px solid var(--black);border-radius:34px 34px 34px 8px;padding:28px 32px;
+    font-size:32px;line-height:1.3;font-weight:500;min-height:216px}
+  .bubble em{font-style:normal;font-weight:800;background:var(--accent);padding:0 .15em;border-radius:6px}
+  .caret{display:inline-block;width:4px;height:1em;margin-left:4px;vertical-align:-.12em;background:var(--accent);animation:blink 1s steps(1) infinite}
+  @keyframes blink{50%{opacity:0}}
+
+  .wave{display:flex;gap:9px;align-items:center;height:60px;margin-top:14px}
+  .wave i{display:block;width:12px;height:100%;border-radius:6px;background:var(--accent);transform:scaleY(.15);transform-origin:center}
+  [data-phase="listen"] .wave i{animation:talk .9s ease-in-out infinite alternate}
+  @keyframes talk{0%{transform:scaleY(.15)}100%{transform:scaleY(var(--h))}}
+
+  /* Robot en su portal: el fondo azul de la foto se gira al verde agua */
+  .coach{position:relative;z-index:2;display:grid;justify-items:center}
+  .portal{position:relative;width:380px;height:380px;border-radius:50%;overflow:hidden;background:var(--accent);
+    box-shadow:0 0 0 10px var(--white),0 0 0 16px var(--black),0 30px 60px rgba(13,13,18,.22);transition:box-shadow .8s var(--out)}
+  .portal img,.finale .bot img{filter:hue-rotate(-45deg) saturate(1.1)}
+  .portal img{position:absolute;left:50%;top:50%;width:150%;transform:translate(-50%,-44%);animation:float 4s ease-in-out infinite}
+  @keyframes float{50%{transform:translate(-50%,-48%)}}
+  [data-phase="think"] .portal{box-shadow:0 0 0 10px var(--white),0 0 0 16px var(--accent),0 30px 60px rgba(13,13,18,.22)}
+  .coach-label{position:absolute;top:100%;left:50%;transform:translate(-50%,-50%);margin-top:4px;background:var(--black);color:var(--white);border-radius:999px;
+    padding:12px 30px;font-weight:800;font-size:26px;white-space:nowrap;display:flex;gap:12px;align-items:baseline}
+  .coach-label small{font-weight:600;font-size:22px;color:var(--white);opacity:.8}
+
+  /* Plan: cuatro piezas del diagnóstico */
+  .cards{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .card{border-radius:24px;padding:22px 24px;min-height:150px;opacity:0;transform:translateY(24px) scale(.96);
+    transition:opacity .5s var(--out),transform .7s var(--out)}
+  .card.in{opacity:1;transform:none}
+  .card h2{font-weight:900;font-size:24px;letter-spacing:-.01em}
+  .card p{font-weight:600;font-size:23px;line-height:1.22;margin-top:6px}
+  .card small{display:block;font-weight:600;font-size:16px;margin-top:10px;opacity:.75}
+  .c1{background:var(--black);color:var(--white)}
+  .c2,.c3{background:var(--white);color:var(--black);border:4px solid var(--black)}
+  .c4{background:var(--accent);color:var(--black)}
+
+  /* Pie con la acción */
+  .foot{position:absolute;left:0;right:0;bottom:0;height:130px;display:flex;align-items:center;justify-content:space-between;
+    padding:0 96px}
+  .foot p{font-size:34px;font-weight:600}
+  .foot p b{font-weight:900}
+  .cta{display:flex;align-items:center;gap:16px;background:var(--accent);color:var(--black);font-weight:900;font-size:40px;padding:24px 46px;border-radius:999px;
+    box-shadow:0 16px 32px rgba(13,13,18,.2)}
+  .cta svg{width:40px;height:40px}
+
+  /* Cierre de cada ciclo: la pantalla le habla al visitante */
+  .finale{position:absolute;inset:0;z-index:10;background:var(--accent);color:var(--black);display:grid;align-content:center;padding:0 140px;
+    clip-path:circle(0% at 50% 62%);transition:clip-path 1s var(--out)}
+  .finale.on{clip-path:circle(150% at 50% 62%)}
+  .finale h2{font-weight:900;font-size:200px;line-height:.9;letter-spacing:-.04em}
+  .finale p{font-weight:600;font-size:58px;line-height:1.15;margin-top:36px;max-width:1300px}
+  .finale .go{margin-top:64px;display:inline-flex;align-items:center;gap:22px;background:var(--black);color:var(--white);font-weight:900;font-size:56px;
+    padding:30px 60px;border-radius:999px;justify-self:start}
+  .finale .go svg{width:56px;height:56px}
+  .finale .bot{position:absolute;right:140px;bottom:120px;width:380px;height:380px;border-radius:50%;overflow:hidden;background:var(--accent);
+    box-shadow:0 0 0 12px var(--white),0 0 0 18px var(--black)}
+  .finale .bot img{position:absolute;left:50%;top:50%;width:150%;transform:translate(-50%,-44%)}
+
+  @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="stage" id="stage" data-phase="listen">
+  <div class="brands"><b>EnterX</b> × Enter Tech School</div>
+  <div class="live"><i></i>AI Coach en vivo en este stand</div>
+
+  <h1>Habla un par de minutos.<br><span>Llévate un plan de IA.</span></h1>
+
+  <div class="band">
+    <div class="rail"></div>
+    <div class="spark" id="spark"></div>
+
+    <div class="col listen">
+      <div class="head">
+        <div class="step"><b>Tú cuentas</b> tu tarea</div>
+        <div class="wave" aria-hidden="true" id="wave"></div>
+        <div class="who" id="who"></div>
+      </div>
+      <div class="bubble" id="bubble"></div>
+    </div>
+
+    <div class="coach">
+      <div class="portal"><img src="assets/robot.jpg" alt="Robot AI Coach"></div>
+      <div class="coach-label" id="coachLabel">AI Coach<small>escuchando…</small></div>
+    </div>
+
+    <div class="col plan">
+      <div class="head"><div class="step"><b>Tu plan</b> llega a tu WhatsApp<span class="ex">Ejemplo</span></div></div>
+      <div class="cards" id="cards">
+        <div class="card c1"><h2>Fortaleza</h2><p></p><small>Lo dijiste en la entrevista</small></div>
+        <div class="card c2"><h2>Debilidad</h2><p></p><small>Lo dijiste en la entrevista</small></div>
+        <div class="card c3"><h2>Oportunidad</h2><p></p><small>Deducido de lo que contaste</small></div>
+        <div class="card c4"><h2>Primer paso</h2><p></p><small>Con prompt listo para copiar</small></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="foot">
+    <p><b>Para ti o para tu empresa.</b> Te lo armamos en vivo.</p>
+    <div class="cta">Acércate
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+    </div>
+  </div>
+
+  <div class="finale" id="finale" aria-hidden="true">
+    <div class="brands"><b>EnterX</b> × Enter Tech School</div>
+    <h2>¿Y tú?</h2>
+    <p>¿Qué tarea te quita tiempo? Cuéntasela al AI Coach y llévate tu plan de IA.</p>
+    <div class="go">Acércate al stand
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+    </div>
+    <div class="bot"><img src="assets/robot.jpg" alt=""></div>
+  </div>
+</div>
+
+<script>
+// Entrevistas de ejemplo (sintéticas). Una por ciclo; luego el cierre "¿Y tú?".
+const PERSONAS = [
+  { who: "Ejemplo · Community manager",
+    said: "Armo la grilla de redes de la marca y nunca me alcanza el tiempo. Todavía no uso IA para eso.",
+    hit: "grilla de redes",
+    plan: ["Conoces la marca y lo que comunica", "La grilla queda pendiente por falta de tiempo",
+           "Tu equipo ya usa IA en el trabajo", "Pedirle a la IA tu primera grilla semanal"] },
+  { who: "Ejemplo · Jefe comercial, distribuidora",
+    said: "En la empresa hacemos los reportes de ventas a mano en Excel. Nos toma toda la mañana y hay errores.",
+    hit: "reportes de ventas",
+    plan: ["Los datos ya están ordenados en Excel", "Proceso manual que genera errores",
+           "Automatizar el consolidado semanal", "Que la IA resuma el reporte y marque lo raro"] },
+  { who: "Ejemplo · Dueña de tienda online",
+    said: "Respondo a mano los mismos mensajes de clientes todos los días: precios, envíos, cambios.",
+    hit: "mismos mensajes de clientes",
+    plan: ["Sabes qué te preguntan tus clientes", "Respondes uno por uno, todo el día",
+           "Respuestas base que la IA adapta", "Crear con IA tus 5 respuestas base"] },
+];
+
+const $ = id => document.getElementById(id);
+const stage = $("stage"), bubble = $("bubble"), who = $("who"), spark = $("spark"),
+      label = $("coachLabel"), cards = [...$("cards").children], finale = $("finale");
+const wait = ms => new Promise(r => setTimeout(r, ms));
+
+// Onda de voz: alturas distintas por barra
+const heights = [.35,.7,1,.55,.9,.4,.95,.6,.8,.3,.65,.45,.85,.5,.75,.25];
+$("wave").innerHTML = heights.map((h,i)=>`<i style="--h:${h};animation-delay:${(i%5)*-.17}s"></i>`).join("");
+
+// Escala del escenario a la pantalla
+function fit(){ const s = Math.min(innerWidth/1920, innerHeight/1080);
+  stage.style.transform = `translate(-50%,-50%) scale(${s})`; }
+addEventListener("resize", fit); fit();
+
+function setLabel(main, sub){ label.innerHTML = `${main} <small>${sub}</small>`; }
+
+function travel(from, to, ms){
+  const band = stage.querySelector(".band").getBoundingClientRect().width / (parseFloat(stage.style.transform.split("scale(")[1]) || 1);
+  spark.style.transition = "none"; spark.style.left = from*band + "px"; spark.style.opacity = 1;
+  spark.getBoundingClientRect();
+  spark.style.transition = `left ${ms}ms cubic-bezier(.65,0,.35,1), opacity .3s`;
+  spark.style.left = to*band + "px";
+  setTimeout(()=> spark.style.opacity = 0, ms);
+}
+
+async function type(p){
+  const words = p.said.split(" ");
+  who.textContent = p.who; bubble.innerHTML = '<span class="caret"></span>';
+  let out = [];
+  for (const w of words){
+    out.push(w);
+    const html = out.join(" ").replace(p.hit, `<em>${p.hit}</em>`);
+    bubble.innerHTML = html + '<span class="caret"></span>';
+    await wait(150 + Math.random()*90);
+  }
+  bubble.innerHTML = p.said.replace(p.hit, `<em>${p.hit}</em>`);
+}
+
+async function cycle(p){
+  cards.forEach((c,i)=>{ c.classList.remove("in"); c.querySelector("p").textContent = p.plan[i]; });
+  stage.dataset.phase = "listen"; setLabel("AI Coach", "escuchando…");
+  await type(p);
+  await wait(900);
+
+  stage.dataset.phase = "think"; setLabel("AI Coach", "analizando tu tarea…");
+  travel(.18, .5, 1100); await wait(1400);
+  travel(.5, .82, 1100); await wait(900);
+
+  stage.dataset.phase = "plan"; setLabel("AI Coach", "¡tu plan está listo!");
+  for (const c of cards){ c.classList.add("in"); await wait(320); }
+  await wait(5200);
+
+  finale.classList.add("on"); await wait(4600);
+  finale.classList.remove("on"); await wait(900);
+}
+
+// Para revisar un estado fijo: pantalla-stand.html#plan, #listen o #finale
+async function freeze(phase){
+  const p = PERSONAS[0];
+  who.textContent = p.who; bubble.innerHTML = p.said.replace(p.hit, `<em>${p.hit}</em>`);
+  cards.forEach((c,i)=>{ c.querySelector("p").textContent = p.plan[i]; c.classList.toggle("in", phase === "plan"); });
+  stage.dataset.phase = phase === "finale" ? "plan" : phase;
+  if (phase === "plan") setLabel("AI Coach", "¡tu plan está listo!");
+  if (phase === "finale"){ finale.style.transition = "none"; finale.classList.add("on"); }
+}
+
+(async function loop(){
+  await document.fonts.ready;
+  if (location.hash) return freeze(location.hash.slice(1));
+  for (let i = 0; ; i = (i+1) % PERSONAS.length) await cycle(PERSONAS[i]);
+})();
+</script>
+</body>
+</html>

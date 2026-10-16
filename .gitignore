@@ -1,0 +1,8 @@
+*
+!index.html
+!assets/
+assets/*
+!assets/robot.jpg
+!assets/fonts/
+!.gitignore
+!assets/fonts/*.woff2
